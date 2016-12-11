@@ -142,7 +142,7 @@ class XGBModel(XGBModelBase):
         self._Booster = None
 
     def __setstate__(self, state):
-        # backward compatibility code
+        # backward compatiblity code
         # load booster from raw if it is raw
         # the booster now support pickle
         bst = state["_Booster"]
@@ -328,20 +328,6 @@ class XGBModel(XGBModelBase):
 
         return evals_result
 
-    @property
-    def feature_importances_(self):
-        """
-        Returns
-        -------
-        feature_importances_ : array of shape = [n_features]
-
-        """
-        b = self.booster()
-        fs = b.get_fscore()
-        all_features = [fs.get(f, 0.) for f in b.feature_names]
-        all_features = np.array(all_features, dtype=np.float32)
-        return all_features / all_features.sum()
-
 
 class XGBClassifier(XGBModel, XGBClassifierBase):
     # pylint: disable=missing-docstring,too-many-arguments,invalid-name
@@ -407,8 +393,6 @@ class XGBClassifier(XGBModel, XGBClassifierBase):
         self.classes_ = np.unique(y)
         self.n_classes_ = len(self.classes_)
 
-        xgb_options = self.get_xgb_params()
-
         if callable(self.objective):
             obj = _objective_decorator(self.objective)
             # Use default value. Is it really not used ?
@@ -420,6 +404,9 @@ class XGBClassifier(XGBModel, XGBClassifierBase):
             # Switch to using a multiclass objective in the underlying XGB instance
             xgb_options["objective"] = "multi:softprob"
             xgb_options['num_class'] = self.n_classes_
+
+        xgb_options = self.get_xgb_params()
+        xgb_options['num_class'] = self.n_classes_
 
         feval = eval_metric if callable(eval_metric) else None
         if eval_metric is not None:
@@ -531,6 +518,20 @@ class XGBClassifier(XGBModel, XGBClassifierBase):
             raise XGBoostError('No results.')
 
         return evals_result
+
+    @property
+    def feature_importances_(self):
+        """
+        Returns
+        -------
+        feature_importances_ : array of shape = [n_features]
+
+        """
+        b = self.booster()
+        fs = b.get_fscore()
+        all_features = [fs.get(f, 0.) for f in b.feature_names]
+        all_features = np.array(all_features, dtype=np.float32)
+        return all_features / all_features.sum()
 
 
 class XGBRegressor(XGBModel, XGBRegressorBase):
