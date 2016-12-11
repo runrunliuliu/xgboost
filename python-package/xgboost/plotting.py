@@ -14,7 +14,7 @@ from .sklearn import XGBModel
 def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='F score', ylabel='Features',
-                    importance_type='weight',
+                    importance_type='weight', ftname=None,
                     grid=True, **kwargs):
 
     """Plot importance based on fitted trees.
@@ -67,10 +67,15 @@ def plot_importance(booster, ax=None, height=0.2,
 
     if len(importance) == 0:
         raise ValueError('Booster.get_score() results in empty')
-
     tuples = [(k, importance[k]) for k in importance]
     tuples = sorted(tuples, key=lambda x: x[1])
     labels, values = zip(*tuples)
+
+    if ftname is not None:
+        nlabel = []
+        for l in labels:
+            nlabel.append(ftname[l])
+        labels = nlabel
 
     if ax is None:
         _, ax = plt.subplots(1, 1)
@@ -79,16 +84,16 @@ def plot_importance(booster, ax=None, height=0.2,
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
 
     for x, y in zip(values, ylocs):
-        ax.text(x + 1, y, x, va='center')
+        ax.text(x + 1, y, x, va='center', fontsize=5)
 
     ax.set_yticks(ylocs)
-    ax.set_yticklabels(labels)
+    ax.set_yticklabels(labels, fontsize=8)
 
     if xlim is not None:
         if not isinstance(xlim, tuple) or len(xlim) != 2:
             raise ValueError('xlim must be a tuple of 2 elements')
     else:
-        xlim = (0, max(values) * 1.1)
+        xlim = (0, max(values) * 1.2)
     ax.set_xlim(xlim)
 
     if ylim is not None:
@@ -119,12 +124,12 @@ def _parse_node(graph, text):
     match = _NODEPAT.match(text)
     if match is not None:
         node = match.group(1)
-        graph.node(node, label=match.group(2), shape='circle')
+        graph.node(node, label=match.group(2), shape='circle', fontsize='11')
         return node
     match = _LEAFPAT.match(text)
     if match is not None:
         node = match.group(1)
-        graph.node(node, label=match.group(2), shape='box')
+        graph.node(node, label=match.group(2), shape='box', fontsize='11')
         return node
     raise ValueError('Unable to parse node: {0}'.format(text))
 
@@ -157,7 +162,7 @@ def to_graphviz(booster, num_trees=0, rankdir='UT',
                 yes_color='#0000FF', no_color='#FF0000', **kwargs):
 
     """Convert specified tree to graphviz instance. IPython can automatically plot the
-    returned graphiz instance. Otherwise, you should call .render() method
+    returned graphiz instance. Otherwise, you shoud call .render() method
     of the returned graphiz instance.
 
     Parameters
@@ -169,9 +174,9 @@ def to_graphviz(booster, num_trees=0, rankdir='UT',
     rankdir : str, default "UT"
         Passed to graphiz via graph_attr
     yes_color : str, default '#0000FF'
-        Edge color when meets the node condition.
+        Edge color when meets the node condigion.
     no_color : str, default '#FF0000'
-        Edge color when doesn't meet the node condition.
+        Edge color when doesn't meet the node condigion.
     kwargs :
         Other keywords passed to graphviz graph_attr
 
@@ -243,6 +248,8 @@ def plot_tree(booster, num_trees=0, rankdir='UT', ax=None, **kwargs):
         _, ax = plt.subplots(1, 1)
 
     g = to_graphviz(booster, num_trees=num_trees, rankdir=rankdir, **kwargs)
+
+    g.render('test.png', view=True)
 
     s = BytesIO()
     s.write(g.pipe(format='png'))
